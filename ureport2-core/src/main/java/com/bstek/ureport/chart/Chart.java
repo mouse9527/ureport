@@ -42,55 +42,64 @@ public class Chart {
     private List<Plugin> plugins = new ArrayList<>();
 
     public ChartData doCompute(Cell cell, Context context) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{");
-        sb.append("\"type\":\"").append(dataset.getType()).append("\",");
-        sb.append("\"data\":").append(dataset.buildDataJson(context, cell)).append(",");
-        sb.append("\"options\":{");
+        ChartData chartData = new ChartData(toString(cell, context), cell);
+        context.addChartData(chartData);
+        return chartData;
+    }
+
+    private String toString(Cell cell, Context context) {
+        return "{" +
+                "\"type\":\"" + dataset.getType() + "\"," +
+                "\"data\":" + dataset.buildDataJson(context, cell) + "," +
+                "\"options\":{" +
+                parseOptions() +
+                "}" +
+                "}";
+    }
+
+    private StringBuilder parseOptions() {
         boolean withoption = false;
+        StringBuilder sb1 = new StringBuilder();
         if (options != null && !options.isEmpty()) {
             withoption = true;
-            sb.append(parseOptionsJson());
+            sb1.append(parseOptionsJson());
         }
-        sb.append(parsePluginsJson(withoption));
-        withoption = true;
+        sb1.append(parsePluginsJson(withoption));
+        sb1.append(parseAxes());
+        return sb1;
+    }
 
+    private StringBuilder parseAxes() {
+        StringBuilder sb1 = new StringBuilder();
         if (xaxes != null || yaxes != null) {
-            if (withoption) {
-                sb.append(",");
-            }
-            withoption = true;
-            sb.append("\"scales\":{");
+            sb1.append(",");
+            sb1.append("\"scales\":{");
             if (xaxes != null) {
-                sb.append("\"xAxes\":[");
-                sb.append(xaxes.toJson());
-                sb.append("]");
+                sb1.append("\"xAxes\":[");
+                sb1.append(xaxes.toJson());
+                sb1.append("]");
             }
             if (yaxes != null) {
                 if (xaxes != null) {
-                    sb.append(",\"yAxes\":[");
+                    sb1.append(",\"yAxes\":[");
                 } else {
-                    sb.append("\"yAxes\":[");
+                    sb1.append("\"yAxes\":[");
                 }
-                sb.append(yaxes.toJson());
-                sb.append("]");
+                sb1.append(yaxes.toJson());
+                sb1.append("]");
             } else {
                 if (hasYAxes(dataset)) {
-                    sb.append(",\"yAxes\":[{\"ticks\":{\"min\":0}}]");
+                    sb1.append(",\"yAxes\":[{\"ticks\":{\"min\":0}}]");
                 }
             }
-            sb.append("}");
+            sb1.append("}");
         } else {
-            if (withoption && hasYAxes(dataset)) {
-                sb.append(",");
-                sb.append("\"scales\":{\"yAxes\":[]}");
+            if (hasYAxes(dataset)) {
+                sb1.append(",");
+                sb1.append("\"scales\":{\"yAxes\":[]}");
             }
         }
-        sb.append("}");
-        sb.append("}");
-        ChartData chartData = new ChartData(sb.toString(), cell);
-        context.addChartData(chartData);
-        return chartData;
+        return sb1;
     }
 
     private StringBuilder parsePluginsJson(boolean withoption) {
