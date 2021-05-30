@@ -49,19 +49,14 @@ public class Chart {
         sb.append("\"options\":{");
         boolean withoption = false;
         if (options != null && !options.isEmpty()) {
-            for (int i = 0; i < options.size(); i++) {
-                Option option = options.get(i);
-                if (i > 0) {
-                    sb.append(",");
-                }
-                sb.append(option.buildOptionJson());
-                withoption = true;
-            }
+            withoption = true;
+            sb.append(parseOptionsJson());
         }
         if (plugins != null && !plugins.isEmpty()) {
             if (withoption) {
                 sb.append(",");
             }
+            withoption = true;
             sb.append("\"plugins\": {");
             for (Plugin plugin : plugins) {
                 String pluginJson = plugin.toJson(dataset.getType());
@@ -71,12 +66,16 @@ public class Chart {
             }
             sb.append("}");
         } else {
+            withoption = true;
             sb.append("\"plugins\": {");
             sb.append("\"datalabels\":{\"display\":false}");
             sb.append("}");
         }
         if (xaxes != null || yaxes != null) {
-            sb.append(",");
+            if (withoption) {
+                sb.append(",");
+            }
+            withoption = true;
             sb.append("\"scales\":{");
             if (xaxes != null) {
                 sb.append("\"xAxes\":[");
@@ -98,7 +97,7 @@ public class Chart {
             }
             sb.append("}");
         } else {
-            if (hasYAxes(dataset)) {
+            if (withoption && hasYAxes(dataset)) {
                 sb.append(",");
                 sb.append("\"scales\":{\"yAxes\":[]}");
             }
@@ -108,6 +107,18 @@ public class Chart {
         ChartData chartData = new ChartData(sb.toString(), cell);
         context.addChartData(chartData);
         return chartData;
+    }
+
+    private StringBuilder parseOptionsJson() {
+        StringBuilder sb1 = new StringBuilder();
+        for (int i = 0; i < options.size(); i++) {
+            Option option = options.get(i);
+            if (i > 0) {
+                sb1.append(",");
+            }
+            sb1.append(option.buildOptionJson());
+        }
+        return sb1;
     }
 
     private boolean hasYAxes(Dataset dataset) {
