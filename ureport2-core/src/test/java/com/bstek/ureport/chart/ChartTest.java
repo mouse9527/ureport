@@ -17,6 +17,7 @@ import static org.mockito.Mockito.mock;
 class ChartTest {
     public static final String MOCK_CELL_NAME = "mock-cell-name";
     public static final String EXPECTED_JSON = "{\"type\":\"null\",\"data\":mock-dataset-output,\"options\":{\"title\":{\"display\":false,\"text\":\"null\",\"position\":\"top\",\"fontSize\":14,\"fontColor\":\"#666\",\"fontStyle\":\"bold\",\"padding\":\"10\"},\"plugins\": {\"datalabels\":{\"display\":false,\"font\":{\"size\":14,\"weight\":\"bold\"}}},\"scales\":{\"xAxes\":[{\"ticks\":{\"minRotation\":0}}],\"yAxes\":[{\"ticks\":{\"minRotation\":0}}]}}}";
+    public static final String EXPECTED_JSON_WHEN_EMPTY_OPTIONS_AND_PLUGINS = "{\"type\":\"null\",\"data\":mock-dataset-output,\"options\":{\"plugins\": {\"datalabels\":{\"display\":false}},\"scales\":{\"xAxes\":[{\"ticks\":{\"minRotation\":0}}],\"yAxes\":[{\"ticks\":{\"minRotation\":0}}]}}}";
 
     @Test
     void should_do_compute() {
@@ -36,6 +37,24 @@ class ChartTest {
 
         then(context).should().addChartData(chartData);
         assertThat(chartData.getJson()).isEqualTo(EXPECTED_JSON);
+        assertThat(chartData.getId()).isEqualTo(MOCK_CELL_NAME);
+    }
+
+    @Test
+    void should_do_compute_with_empty_options_and_plugins() {
+        Cell cell = new Cell();
+        cell.setName(MOCK_CELL_NAME);
+        Chart chart = new Chart();
+        Dataset dataset = mock(Dataset.class);
+        Context context = mock(Context.class);
+        given(dataset.buildDataJson(context, cell)).willReturn("mock-dataset-output");
+        chart.setDataset(dataset);
+        chart.setXaxes(new XAxes());
+        chart.setYaxes(new YAxes());
+
+        ChartData chartData = chart.doCompute(cell, context);
+
+        assertThat(chartData.getJson()).isEqualTo(EXPECTED_JSON_WHEN_EMPTY_OPTIONS_AND_PLUGINS);
         assertThat(chartData.getId()).isEqualTo(MOCK_CELL_NAME);
     }
 }
