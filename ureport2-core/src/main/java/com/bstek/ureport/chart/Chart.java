@@ -54,14 +54,14 @@ public class Chart {
     }
 
     private String toJsonString(Cell cell, Context context) {
-        return String.format("{\"type\":\"%s\",\"data\":%s,\"options\":%s}", getDataSetTypeJson(), getDatasetJson(cell, context), getOptionsJson());
+        return String.format("{\"type\":\"%s\",\"data\":%s,\"options\":%s}", getTypeJson(), getDataJson(cell, context), getOptionsJson());
     }
 
-    private String getDataSetTypeJson() {
+    private String getTypeJson() {
         return dataset.getType();
     }
 
-    private String getDatasetJson(Cell cell, Context context) {
+    private String getDataJson(Cell cell, Context context) {
         return dataset.buildDataJson(context, cell);
     }
 
