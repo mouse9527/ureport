@@ -26,6 +26,7 @@ import com.bstek.ureport.chart.dataset.impl.category.LineDataset;
 import com.bstek.ureport.chart.option.Option;
 import com.bstek.ureport.chart.plugins.Plugin;
 import com.bstek.ureport.model.Cell;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,11 +54,7 @@ public class Chart {
     }
 
     private String toJsonString(Cell cell, Context context) {
-        return "{" +
-                "\"type\":\"" + getDataSetTypeJson() + "\"," +
-                "\"data\":" + getDatasetJson(cell, context) + "," +
-                "\"options\":" + getOptionsJson() +
-                "}";
+        return String.format("{\"type\":\"%s\",\"data\":%s,\"options\":%s}", getDataSetTypeJson(), getDatasetJson(cell, context), getOptionsJson());
     }
 
     private String getDataSetTypeJson() {
@@ -71,39 +68,28 @@ public class Chart {
     private String getOptionsJson() {
         StringBuilder builder = new StringBuilder();
         builder.append("{");
-        String optionsJson = appendOptionsJson();
+
+        String optionsJson = Option.getOptionsJson(options);
         builder.append(optionsJson);
-        builder.append(appendPluginsJson());
+
+        if (StringUtils.isNotBlank(optionsJson)) {
+            builder.append(",");
+        }
+        String pluginsJson = appendPluginsJson();
+        builder.append(pluginsJson);
+
+        if (StringUtils.isNotBlank(pluginsJson)) {
+            builder.append(",");
+        }
         builder.append(appendScales());
+
         builder.append("}");
         return builder.toString();
     }
 
-    private String appendOptionsJson() {
-        StringBuilder builder = new StringBuilder();
-        if (hasOptions()) {
-            for (int i = 0; i < options.size(); i++) {
-                Option option = options.get(i);
-                if (i > 0) {
-                    builder.append(",");
-                }
-                builder.append(option.buildOptionJson());
-            }
-        }
-        return builder.toString();
-    }
-
-    private boolean hasOptions() {
-        return options != null && !options.isEmpty();
-    }
-
     private String appendPluginsJson() {
         StringBuilder builder = new StringBuilder();
-        if (hasOptions()) {
-            builder.append(",");
-        }
         builder.append("\"plugins\": {");
-
         if (hasPlugin()) {
             builder.append(toJson(plugins, dataset.getType()));
         } else {
@@ -118,13 +104,11 @@ public class Chart {
     }
 
     private String appendScales() {
-        StringBuilder builder = new StringBuilder();
         if ((hasXAxes() || yaxes != null) || hasYAxes(dataset)) {
-            builder.append(",\"scales\":{");
-            builder.append(getScalesJson());
-            builder.append("}");
+            return String.format("\"scales\":{%s}", getScalesJson());
+        } else {
+            return "";
         }
-        return builder.toString();
     }
 
     private String getScalesJson() {
