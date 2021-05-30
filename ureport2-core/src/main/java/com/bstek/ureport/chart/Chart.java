@@ -53,24 +53,13 @@ public class Chart {
             sb.append(parseOptionsJson());
         }
         if (plugins != null && !plugins.isEmpty()) {
-            if (withoption) {
-                sb.append(",");
-            }
+            sb.append(parsePluginsJson(withoption));
             withoption = true;
-            sb.append("\"plugins\": {");
-            for (Plugin plugin : plugins) {
-                String pluginJson = plugin.toJson(dataset.getType());
-                if (pluginJson != null) {
-                    sb.append(pluginJson);
-                }
-            }
-            sb.append("}");
         } else {
             withoption = true;
-            sb.append("\"plugins\": {");
-            sb.append("\"datalabels\":{\"display\":false}");
-            sb.append("}");
+            sb.append(parseEmptyPlugins());
         }
+
         if (xaxes != null || yaxes != null) {
             if (withoption) {
                 sb.append(",");
@@ -107,6 +96,30 @@ public class Chart {
         ChartData chartData = new ChartData(sb.toString(), cell);
         context.addChartData(chartData);
         return chartData;
+    }
+
+    private StringBuilder parseEmptyPlugins() {
+        StringBuilder sb1 = new StringBuilder();
+        sb1.append("\"plugins\": {");
+        sb1.append("\"datalabels\":{\"display\":false}");
+        sb1.append("}");
+        return sb1;
+    }
+
+    private StringBuilder parsePluginsJson(boolean withoption) {
+        StringBuilder sb1 = new StringBuilder();
+        if (withoption) {
+            sb1.append(",");
+        }
+        sb1.append("\"plugins\": {");
+        for (Plugin plugin : plugins) {
+            String pluginJson = plugin.toJson(dataset.getType());
+            if (pluginJson != null) {
+                sb1.append(pluginJson);
+            }
+        }
+        sb1.append("}");
+        return sb1;
     }
 
     private StringBuilder parseOptionsJson() {
