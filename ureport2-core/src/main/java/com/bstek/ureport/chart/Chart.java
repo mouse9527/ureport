@@ -30,11 +30,16 @@ import com.bstek.ureport.model.Cell;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.bstek.ureport.chart.plugins.Plugin.toJson;
+
 /**
  * @author Jacky.gao
  * @since 2017年6月8日
  */
 public class Chart {
+    public static final String EMPTY_PLUGINS_JSON = "\"datalabels\":{\"display\":false}";
+    public static final String DEFAULT_Y_AXES_JSON = ",\"yAxes\":[{\"ticks\":{\"min\":0}}]";
+    public static final String DEFAULT_SCALES_JSON = "\"yAxes\":[]";
     private Dataset dataset;
     private XAxes xaxes;
     private YAxes yaxes;
@@ -42,100 +47,125 @@ public class Chart {
     private List<Plugin> plugins = new ArrayList<>();
 
     public ChartData doCompute(Cell cell, Context context) {
-        ChartData chartData = new ChartData(toString(cell, context), cell);
+        ChartData chartData = new ChartData(toJsonString(cell, context), cell);
         context.addChartData(chartData);
         return chartData;
     }
 
-    private String toString(Cell cell, Context context) {
+    private String toJsonString(Cell cell, Context context) {
         return "{" +
-                "\"type\":\"" + dataset.getType() + "\"," +
-                "\"data\":" + dataset.buildDataJson(context, cell) + "," +
-                "\"options\":{" +
-                parseOptions() +
-                "}" +
+                "\"type\":\"" + getDataSetTypeJson() + "\"," +
+                "\"data\":" + getDatasetJson(cell, context) + "," +
+                "\"options\":" + getOptionsJson() +
                 "}";
     }
 
-    private StringBuilder parseOptions() {
-        boolean withoption = false;
-        StringBuilder sb1 = new StringBuilder();
-        if (options != null && !options.isEmpty()) {
-            withoption = true;
-            sb1.append(parseOptionsJson());
-        }
-        sb1.append(parsePluginsJson(withoption));
-        sb1.append(parseAxes());
-        return sb1;
+    private String getDataSetTypeJson() {
+        return dataset.getType();
     }
 
-    private StringBuilder parseAxes() {
-        StringBuilder sb1 = new StringBuilder();
-        if (xaxes != null || yaxes != null) {
-            sb1.append(",");
-            sb1.append("\"scales\":{");
-            if (xaxes != null) {
-                sb1.append("\"xAxes\":[");
-                sb1.append(xaxes.toJson());
-                sb1.append("]");
-            }
-            if (yaxes != null) {
-                if (xaxes != null) {
-                    sb1.append(",\"yAxes\":[");
-                } else {
-                    sb1.append("\"yAxes\":[");
+    private String getDatasetJson(Cell cell, Context context) {
+        return dataset.buildDataJson(context, cell);
+    }
+
+    private String getOptionsJson() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("{");
+        String optionsJson = appendOptionsJson();
+        builder.append(optionsJson);
+        builder.append(appendPluginsJson());
+        builder.append(appendScales());
+        builder.append("}");
+        return builder.toString();
+    }
+
+    private String appendOptionsJson() {
+        StringBuilder builder = new StringBuilder();
+        if (hasOptions()) {
+            for (int i = 0; i < options.size(); i++) {
+                Option option = options.get(i);
+                if (i > 0) {
+                    builder.append(",");
                 }
-                sb1.append(yaxes.toJson());
-                sb1.append("]");
-            } else {
-                if (hasYAxes(dataset)) {
-                    sb1.append(",\"yAxes\":[{\"ticks\":{\"min\":0}}]");
-                }
+                builder.append(option.buildOptionJson());
             }
-            sb1.append("}");
+        }
+        return builder.toString();
+    }
+
+    private boolean hasOptions() {
+        return options != null && !options.isEmpty();
+    }
+
+    private String appendPluginsJson() {
+        StringBuilder builder = new StringBuilder();
+        if (hasOptions()) {
+            builder.append(",");
+        }
+        builder.append("\"plugins\": {");
+
+        if (hasPlugin()) {
+            builder.append(toJson(plugins, dataset.getType()));
         } else {
-            if (hasYAxes(dataset)) {
-                sb1.append(",");
-                sb1.append("\"scales\":{\"yAxes\":[]}");
-            }
+            builder.append(EMPTY_PLUGINS_JSON);
         }
-        return sb1;
+        builder.append("}");
+        return builder.toString();
     }
 
-    private StringBuilder parsePluginsJson(boolean withoption) {
-        StringBuilder sb = new StringBuilder();
-        if (plugins != null && !plugins.isEmpty()) {
-            if (withoption) {
-                sb.append(",");
-            }
-            sb.append("\"plugins\": {");
-            for (Plugin plugin : plugins) {
-                String pluginJson = plugin.toJson(dataset.getType());
-                if (pluginJson != null) {
-                    sb.append(pluginJson);
-                }
-            }
-            sb.append("}");
+    private boolean hasPlugin() {
+        return plugins != null && !plugins.isEmpty();
+    }
+
+    private String appendScales() {
+        StringBuilder builder = new StringBuilder();
+        if ((hasXAxes() || yaxes != null) || hasYAxes(dataset)) {
+            builder.append(",\"scales\":{");
+            builder.append(getScalesJson());
+            builder.append("}");
+        }
+        return builder.toString();
+    }
+
+    private String getScalesJson() {
+        if (hasXAxes() || yaxes != null) {
+            return String.format("%s%s", getXAxesJson(), getYAxesJson());
+        } else if (hasYAxes(dataset)) {
+            return DEFAULT_SCALES_JSON;
+        }
+        return "";
+    }
+
+    private String getXAxesJson() {
+        if (hasXAxes()) {
+            return String.format("\"xAxes\":[%s]", xaxes.toJson());
         } else {
-            sb.append("\"plugins\": {");
-            sb.append("\"datalabels\":{\"display\":false}");
-            sb.append("}");
+            return "";
         }
-        return sb;
     }
 
-    private StringBuilder parseOptionsJson() {
-        StringBuilder sb1 = new StringBuilder();
-        for (int i = 0; i < options.size(); i++) {
-            Option option = options.get(i);
-            if (i > 0) {
-                sb1.append(",");
-            }
-            sb1.append(option.buildOptionJson());
+    private String getYAxesJson() {
+        if (yaxes != null) {
+            return String.format("%s%s]", getYaxesPrefix(), yaxes.toJson());
+        } else if (hasYAxes(dataset)) {
+            return DEFAULT_Y_AXES_JSON;
         }
-        return sb1;
+        return "";
     }
 
+    private String getYaxesPrefix() {
+        if (hasXAxes()) {
+            return ",\"yAxes\":[";
+        } else {
+            return "\"yAxes\":[";
+        }
+    }
+
+    private boolean hasXAxes() {
+        return xaxes != null;
+    }
+
+    // TODO: rename it
     private boolean hasYAxes(Dataset dataset) {
         if (dataset instanceof BarDataset) {
             return true;
