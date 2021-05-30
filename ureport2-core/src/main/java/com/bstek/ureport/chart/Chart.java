@@ -48,7 +48,7 @@ public class Chart {
     private List<Plugin> plugins = new ArrayList<>();
 
     public ChartData doCompute(Cell cell, Context context) {
-        ChartData chartData = new ChartData(this.toJsonString(cell, context), cell);
+        ChartData chartData = new ChartData(this.toJsonString(cell, context), cell.getName());
         context.addChartData(chartData);
         return chartData;
     }
